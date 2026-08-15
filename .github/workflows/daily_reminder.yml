@@ -1,0 +1,24 @@
+name: Daily expense reminder
+
+on:
+  schedule:
+    - cron: "30 12 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Send reminder email
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_EMAIL_TO: ${{ secrets.REPORT_EMAIL_TO }}
+          FORM_LINK: ${{ secrets.FORM_LINK }}
+        run: python daily_reminder.py
