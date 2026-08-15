@@ -32,19 +32,30 @@ def get_client():
     return gspread.authorize(creds)
 
 
-def load_data(sheet_id: str, worksheet_name: str = "Form Responses 1") -> pd.DataFrame:
+def load_data(sheet_id: str, worksheet_name: str | None = None) -> pd.DataFrame:
     """
     Expected sheet columns (from the Google Form):
     Timestamp | Category | Amount | Payment Mode | Notes
     """
     client = get_client()
     sh = client.open_by_key(sheet_id)
-    ws = sh.worksheet(worksheet_name)
+
+    if worksheet_name:
+        try:
+            ws = sh.worksheet(worksheet_name)
+        except gspread.exceptions.WorksheetNotFound:
+            ws = sh.get_worksheet(0)
+    else:
+        ws = sh.get_worksheet(0)
+
     records = ws.get_all_records()
     df = pd.DataFrame(records)
 
     if df.empty:
         return df
+
+    # Guard against stray whitespace in header names (e.g. "Category ")
+    df.columns = [str(c).strip() for c in df.columns]
 
     df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
     df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").fillna(0)
